@@ -1,0 +1,91 @@
+services:
+  ollama:
+    volumes:
+      - ollama:/root/.ollama
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    image: ollama/ollama:latest
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: ${GPU_DRIVER-nvidia}
+              count: all
+              capabilities:
+                - gpu
+
+  open-webui:
+    pull_policy: always
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    volumes:
+      - open-webui:/app/backend/data
+    depends_on:
+      - ollama
+    ports:
+      - ${OPEN_WEBUI_PORT-3000}:8080
+    environment:
+      - 'OLLAMA_BASE_URL=http://ollama:11434'
+      - 'WEBUI_SECRET_KEY='
+      - 'OPENAI_API_BASE_URL=http://pipelines:9099'
+      - 'OPENAI_API_KEY=0p3n-w3bu!'
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+
+  pipelines:
+    pull_policy: always
+    image: ghcr.io/open-webui/pipelines:main
+    container_name: pipelines
+    volumes:
+        - pipelines:/app/pipelines
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    ports:
+      - 9099:9099
+    depends_on:
+      - langfuse
+
+
+  langfuse:
+    image: langfuse/langfuse:latest
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@langfuse-db:5432/postgres
+      - NEXTAUTH_SECRET=mysecret
+      - SALT=mysalt
+      - NEXTAUTH_URL=http://localhost:4000
+      - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-true}
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+      - PORT=4000
+
+  langfuse-db:
+    image: postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - langfuse_database_data:/var/lib/postgresql/data
+
+volumes:
+  ollama: {}
+  open-webui: {}
+  pipelines: {}
+  langfuse_database_data: {}
