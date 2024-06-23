@@ -44,5 +44,5 @@ get_gpu_driver() {
 
 
 export GPU_DRIVER=$(get_gpu_driver)
-
+echo "GPU DRIVER: $GPU_DRIVER"
 docker compose up -d
