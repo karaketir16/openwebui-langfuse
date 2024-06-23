@@ -43,6 +43,7 @@ This repository provides a setup for integrating OLLAMA, OPEN-WEBUI, PIPELINES, 
 
 4. **Update the Pipeline Script:**
    - Replace `your-secret-key-here` with your secret key, `your-public-key-here` with your public key, and `https://cloud.langfuse.com` with `http://langfuse:4000` in `langfuse_filter_pipeline.py`.
+   - **Note:** If you are using the example in this repository, replace the secret key and public key with your own keys.
 
 ### Open-WebUI Setup
 
