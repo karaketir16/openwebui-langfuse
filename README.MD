@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This repository provides a setup for integrating OLLAMA, OPEN-WEBUI, PIPELINES, and LANGFUSE using Docker. Follow the steps below to get everything up and running.
+This repository provides a setup for integrating [OLLAMA](https://github.com/ollama/ollama), [OPEN-WEBUI](https://github.com/open-webui/open-webui), [PIPELINES](https://github.com/open-webui/pipelines/), and [LANGFUSE](https://github.com/langfuse/langfuse) using Docker. Follow the steps below to get everything up and running.
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ This repository provides a setup for integrating OLLAMA, OPEN-WEBUI, PIPELINES, 
    or
    ```bash
    docker compose up -d
-   #default driver is nvidia
+   # default driver is nvidia
    ```
 
 ## Configuration
