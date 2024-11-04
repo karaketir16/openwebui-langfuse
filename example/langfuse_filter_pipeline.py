@@ -38,9 +38,9 @@ class Pipeline:
         self.valves = self.Valves(
             **{
                 "pipelines": ["*"],
-                "secret_key": os.getenv("LANGFUSE_SECRET_KEY", "your-secret-key-here"),
-                "public_key": os.getenv("LANGFUSE_PUBLIC_KEY", "your-public-key-here"),
-                "host": os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
+                "secret_key": os.getenv("LANGFUSE_SECRET_KEY", "sk-lf-c2f44563-30b0-436c-a7fb-6cd44f70f434"),
+                "public_key": os.getenv("LANGFUSE_PUBLIC_KEY", "pk-lf-1e9f2f75-4159-406a-9447-d18ef7f8c05b"),
+                "host": os.getenv("LANGFUSE_HOST", "http://langfuse:4000"),
             }
         )
         self.langfuse = None
