@@ -1,100 +1,102 @@
 """
 title: Langfuse Filter Pipeline
 author: open-webui
-date: 2024-05-30
-version: 1.1
+date: 2024-09-27
+version: 1.4
 license: MIT
 description: A filter pipeline that uses Langfuse.
 requirements: langfuse
 """
 
 from typing import List, Optional
-from schemas import OpenAIChatMessage
 import os
+import uuid
 
-from utils.pipelines.main import get_last_user_message, get_last_assistant_message
+from utils.pipelines.main import get_last_assistant_message
 from pydantic import BaseModel
 from langfuse import Langfuse
+from langfuse.api.resources.commons.errors.unauthorized_error import UnauthorizedError
+
+def get_last_assistant_message_obj(messages: List[dict]) -> dict:
+    for message in reversed(messages):
+        if message["role"] == "assistant":
+            return message
+    return {}
 
 
 class Pipeline:
     class Valves(BaseModel):
-        # List target pipeline ids (models) that this filter will be connected to.
-        # If you want to connect this filter to all pipelines, you can set pipelines to ["*"]
-        # e.g. ["llama3:latest", "gpt-3.5-turbo"]
         pipelines: List[str] = []
-
-        # Assign a priority level to the filter pipeline.
-        # The priority level determines the order in which the filter pipelines are executed.
-        # The lower the number, the higher the priority.
         priority: int = 0
-
-        # Valves
         secret_key: str
         public_key: str
         host: str
 
     def __init__(self):
-        # Pipeline filters are only compatible with Open WebUI
-        # You can think of filter pipeline as a middleware that can be used to edit the form data before it is sent to the OpenAI API.
         self.type = "filter"
-
-        # Optionally, you can set the id and name of the pipeline.
-        # Best practice is to not specify the id so that it can be automatically inferred from the filename, so that users can install multiple versions of the same pipeline.
-        # The identifier must be unique across all pipelines.
-        # The identifier must be an alphanumeric string that can include underscores or hyphens. It cannot contain spaces, special characters, slashes, or backslashes.
-        # self.id = "langfuse_filter_pipeline"
         self.name = "Langfuse Filter"
-
-        # Initialize
         self.valves = self.Valves(
             **{
-                "pipelines": ["*"],  # Connect to all pipelines
-                "secret_key": os.getenv("LANGFUSE_SECRET_KEY", "sk-lf-c2f44563-30b0-436c-a7fb-6cd44f70f434"),
-                "public_key": os.getenv("LANGFUSE_PUBLIC_KEY", "pk-lf-1e9f2f75-4159-406a-9447-d18ef7f8c05b"),
-                "host": os.getenv("LANGFUSE_HOST", "http://langfuse:4000"),
+                "pipelines": ["*"],
+                "secret_key": os.getenv("LANGFUSE_SECRET_KEY", "your-secret-key-here"),
+                "public_key": os.getenv("LANGFUSE_PUBLIC_KEY", "your-public-key-here"),
+                "host": os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
             }
         )
-
         self.langfuse = None
         self.chat_generations = {}
-        pass
 
     async def on_startup(self):
-        # This function is called when the server is started.
         print(f"on_startup:{__name__}")
         self.set_langfuse()
-        pass
 
     async def on_shutdown(self):
-        # This function is called when the server is stopped.
         print(f"on_shutdown:{__name__}")
         self.langfuse.flush()
-        pass
 
     async def on_valves_updated(self):
-        # This function is called when the valves are updated.
-
         self.set_langfuse()
-        pass
 
     def set_langfuse(self):
-        self.langfuse = Langfuse(
-            secret_key=self.valves.secret_key,
-            public_key=self.valves.public_key,
-            host=self.valves.host,
-            debug=False,
-        )
-        self.langfuse.auth_check()
+        try:
+            self.langfuse = Langfuse(
+                secret_key=self.valves.secret_key,
+                public_key=self.valves.public_key,
+                host=self.valves.host,
+                debug=False,
+            )
+            self.langfuse.auth_check()
+        except UnauthorizedError:
+            print(
+                "Langfuse credentials incorrect. Please re-enter your Langfuse credentials in the pipeline settings."
+            )
+        except Exception as e:
+            print(f"Langfuse error: {e} Please re-enter your Langfuse credentials in the pipeline settings.")
 
     async def inlet(self, body: dict, user: Optional[dict] = None) -> dict:
         print(f"inlet:{__name__}")
+        print(f"Received body: {body}")
+        print(f"User: {user}")
+
+        # Check for presence of required keys and generate chat_id if missing
+        if "chat_id" not in body:
+            unique_id = f"SYSTEM MESSAGE {uuid.uuid4()}"
+            body["chat_id"] = unique_id
+            print(f"chat_id was missing, set to: {unique_id}")
+
+        required_keys = ["model", "messages"]
+        missing_keys = [key for key in required_keys if key not in body]
+        
+        if missing_keys:
+            error_message = f"Error: Missing keys in the request body: {', '.join(missing_keys)}"
+            print(error_message)
+            raise ValueError(error_message)
 
         trace = self.langfuse.trace(
             name=f"filter:{__name__}",
             input=body,
-            user_id=user["id"],
-            metadata={"name": user["name"]},
+            user_id=user["email"],
+            metadata={"user_name": user["name"], "user_id": user["id"]},
             session_id=body["chat_id"],
         )
 
@@ -112,24 +114,37 @@ class Pipeline:
 
     async def outlet(self, body: dict, user: Optional[dict] = None) -> dict:
         print(f"outlet:{__name__}")
+        print(f"Received body: {body}")
         if body["chat_id"] not in self.chat_generations:
             return body
 
         generation = self.chat_generations[body["chat_id"]]
+        assistant_message = get_last_assistant_message(body["messages"])
 
-        user_message = get_last_user_message(body["messages"])
-        generated_message = get_last_assistant_message(body["messages"])
+        
+        # Extract usage information for models that support it
+        usage = None
+        assistant_message_obj = get_last_assistant_message_obj(body["messages"])
+        if assistant_message_obj:
+            info = assistant_message_obj.get("info", {})
+            if isinstance(info, dict):
+                input_tokens = info.get("prompt_eval_count") or info.get("prompt_tokens")
+                output_tokens = info.get("eval_count") or info.get("completion_tokens")
+                if input_tokens is not None and output_tokens is not None:
+                    usage = {
+                        "input": input_tokens,
+                        "output": output_tokens,
+                        "unit": "TOKENS",
+                    }
 
-        # Update usage cost based on the length of the input and output messages
-        # Below does not reflect the actual cost of the API
-        # You can adjust the cost based on your requirements
+        # Update generation
         generation.end(
-            output=generated_message,
-            usage={
-                "totalCost": (len(user_message) + len(generated_message)) / 1000,
-                "unit": "CHARACTERS",
-            },
+            output=assistant_message,
             metadata={"interface": "open-webui"},
+            usage=usage,
         )
+
+        # Clean up the chat_generations dictionary
+        del self.chat_generations[body["chat_id"]]
 
         return body
