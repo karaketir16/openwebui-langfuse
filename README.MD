@@ -29,9 +29,11 @@ This repository provides a setup for integrating [OLLAMA](https://github.com/oll
 ## Configuration
 
 ### Langfuse Setup
+0. **Documentation**
+   - You can find up-to-date documentation [here](https://langfuse.com/docs/integrations/openwebui).
 
 1. **Download the `langfuse_filter_pipeline.py` file:**
-   - You can download it from [here](https://github.com/open-webui/pipelines/blob/main/examples/filters/langfuse_filter_pipeline.py), or use the provided file in `example/langfuse_filter_pipeline.py`.
+   - You can download latest file from [here](https://github.com/open-webui/pipelines/blob/main/examples/filters/langfuse_filter_pipeline.py), or use the provided file in `example/langfuse_filter_pipeline.py`.
 
 2. **Access Langfuse:**
    - Open your browser and go to `http://localhost:4000`.
