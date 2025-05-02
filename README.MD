@@ -22,7 +22,7 @@ This repository provides a setup for integrating [OLLAMA](https://github.com/oll
    ```
    or
    ```bash
-   docker compose up -d
+   docker compose -f docker-compose.yaml -f langfuse-v3.yaml up -d
    # default driver is nvidia
    ```
 
@@ -32,20 +32,19 @@ This repository provides a setup for integrating [OLLAMA](https://github.com/oll
 0. **Documentation**
    - You can find up-to-date documentation [here](https://langfuse.com/docs/integrations/openwebui).
 
-1. **Download the `langfuse_filter_pipeline.py` file:**
-   - You can download latest file from [here](https://github.com/open-webui/pipelines/blob/main/examples/filters/langfuse_filter_pipeline.py), or use the provided file in `example/langfuse_filter_pipeline.py`.
+1. **Download the `langfuse_filter_pipeline.py` file (only if offline):**
+   - If your setup does **not** have internet access:
+     - You can manually download the script from:
+       `https://github.com/open-webui/pipelines/blob/main/examples/filters/langfuse_filter_pipeline.py`
+     - Or use the local copy provided at: `example/langfuse_filter_pipeline.py`
 
 2. **Access Langfuse:**
    - Open your browser and go to `http://localhost:4000`.
 
 3. **Create an Admin Account and Project:**
-   - Create an admin account and then create a project.
+   - Create an admin account and then create an organization and a project.
    - Go to Project Settings and create an API key.
    - Retrieve the secret key and public key.
-
-4. **Update the Pipeline Script:**
-   - Replace `your-secret-key-here` with your secret key, `your-public-key-here` with your public key, and `https://cloud.langfuse.com` with `http://langfuse:4000` in `langfuse_filter_pipeline.py`.
-   - **Note:** If you are using the example in this repository, replace the secret key and public key with your own keys.
 
 ### Open-WebUI Setup
 
@@ -56,10 +55,23 @@ This repository provides a setup for integrating [OLLAMA](https://github.com/oll
    - Create an admin account.
 
 3. **Upload the Pipeline Script:**
-   - Navigate to `Settings -> Admin Settings -> Pipelines`.
-   - In the `Upload Pipeline` section, select the `langfuse_filter_pipeline.py` file and click the upload button.
+   - Go to `Settings -> Admin Settings -> Pipelines`.
+   - If online, paste this URL:
+     ```
+     https://raw.githubusercontent.com/open-webui/pipelines/refs/heads/main/examples/filters/langfuse_filter_pipeline.py
+     ```
+     into the `Install from Github URL` field and click the download button.
+   - If offline or using a custom script, upload `langfuse_filter_pipeline.py` from your local machine via the `Upload Pipeline` section.
 
-4. **Monitor Usage:**
+4. **Configure the Script:**
+   - After uploading the pipeline, edit its configuration in the UI.
+   - Replace the placeholder values as follows:
+     - `your-secret-key-here` → your **Langfuse secret key**
+     - `your-public-key-here` → your **Langfuse public key**
+     - `https://cloud.langfuse.com` → `http://langfuse-web:4000` (**local address**)
+
+
+5. **Monitor Usage:**
    - You can now monitor Open-WebUI usage statistics from Langfuse.
 
 ### Model Downloading
@@ -68,7 +80,7 @@ This repository provides a setup for integrating [OLLAMA](https://github.com/oll
    - Open your browser and go to `http://localhost:3000`.
 
 2. **Create an Admin Account:**
-   - Create an admin account.
+   - Create an admin account if you haven’t already.
 
 3. **Pull Models:**
    - Navigate to `Settings -> Admin Settings -> Models`.

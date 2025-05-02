@@ -4,7 +4,7 @@
 # All other components are bound to localhost (127.0.0.1) to only accept connections from the local machine.
 # External connections from other machines will not be able to reach these services directly.
 services:
-  langfuse:
+  langfuse-web:
     image: langfuse/langfuse:2
     depends_on:
       langfuse-db:
@@ -36,7 +36,7 @@ services:
       - 5432:5432
     volumes:
       - langfuse_database_data:/var/lib/postgresql/data
-
+      
 volumes:
   langfuse_database_data:
     driver: local

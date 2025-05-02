@@ -48,7 +48,7 @@ services:
     ports:
       - 9099:9099
     depends_on:
-      - langfuse
+      - langfuse-web
 
 
 volumes:
