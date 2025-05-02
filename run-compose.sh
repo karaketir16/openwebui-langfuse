@@ -45,4 +45,4 @@ get_gpu_driver() {
 
 export GPU_DRIVER=$(get_gpu_driver)
 echo "GPU DRIVER: $GPU_DRIVER"
-docker compose up -d
+docker compose -f docker-compose.yaml -f langfuse-v2.yaml up -d
